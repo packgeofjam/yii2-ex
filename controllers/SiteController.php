@@ -2,6 +2,9 @@
 
 namespace app\controllers;
 
+use app\models\EntryForm;
+use app\models\SignupForm;
+use app\models\User;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -130,5 +133,62 @@ class SiteController extends Controller
     public function actionAbout()
     {
         return $this->render('about');
+    }
+
+    public function actionEntry()
+    {
+        $model = new EntryForm();
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            // данные в $model удачно проверены
+
+            // делаем что-то полезное с $model ...
+
+            return $this->render('entry-confirm', ['model' => $model]);
+        } else {
+            // либо страница отображается первый раз, либо есть ошибка в данных
+            return $this->render('entry', ['model' => $model]);
+        }
+    }
+    public function actionSignup()
+    {
+        $model = new SignupForm();
+        if ($model->load(Yii::$app->request->post())) {
+            if ($user = $model->signup()) {
+                if (Yii::$app->getUser()->login($user)) {
+                    return $this->goHome();
+                }
+            }
+        }
+        return $this->render('signup', [
+            'model' => $model,
+        ]);
+    }
+
+    public function actionUserList()
+    {
+        $userlist = User::find()->orderBy('status')->all();
+
+        return $this->render('users', [
+            'users' => $userlist,
+        ]);
+    }
+
+    public function actionStatus($id)
+    {
+        $model = User::findOne($id);
+        if ($model->status == User::STATUS_DELETED) {
+            $model->status = User::STATUS_ACTIVE;
+        } else {
+            $model->status = User::STATUS_DELETED;
+        }
+        // $model->status=User::STATUS_DELETED;
+        $model->save();
+
+        $userlist = User::find()->orderBy('status')->all();
+
+        return $this->render('users', [
+            'users' => $userlist,
+        ]);
     }
 }
